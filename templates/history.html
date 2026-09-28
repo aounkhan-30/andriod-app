@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhoneScope - Scan History</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0A0D14; color: #E8ECF4; font-family: 'Segoe UI', sans-serif; }
+
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 2rem; border-bottom: 1px solid #1E2640;
+      background: rgba(10,13,20,0.9);
+    }
+    .logo { font-size: 1.3rem; font-weight: 700; }
+    .logo span { color: #3B82F6; }
+    .nav-right { display: flex; gap: 0.6rem; }
+    .back-btn {
+      background: #161B2E; color: #E8ECF4;
+      border: 1px solid #1E2640; padding: 0.5rem 1rem;
+      border-radius: 8px; text-decoration: none; font-size: 0.85rem;
+    }
+
+    .page { max-width: 1200px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+    .page h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .page p { color: #6B7A99; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    .table-wrap {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th {
+      text-align: left; padding: 0.9rem 1rem;
+      color: #6B7A99; font-weight: 600; font-size: 0.75rem;
+      border-bottom: 1px solid #1E2640; white-space: nowrap;
+    }
+    td { padding: 0.8rem 1rem; border-bottom: 1px solid #1E2640; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    .serial { font-family: monospace; color: #3B82F6; }
+    .green { color: #22C55E; }
+
+    .empty { padding: 3rem 2rem; text-align: center; color: #6B7A99; }
+    .empty a { color: #3B82F6; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">📡 Phone<span>Scope</span></div>
+    <div class="nav-right">
+      <a href="/dashboard" class="back-btn">Scan a phone</a>
+      <a href="/" class="back-btn">Home</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <h1>Scan History</h1>
+    <p>Every phone scan saved in the database, newest first.</p>
+
+    <div class="table-wrap">
+      {% if scans %}
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Phone</th>
+            <th>Serial</th>
+            <th>Battery</th>
+            <th>Battery health</th>
+            <th>Temp</th>
+            <th>Storage used</th>
+            <th>RAM free</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in scans %}
+          <tr>
+            <td>{{ s['scanned_at'] }}</td>
+            <td>{{ s['name'] }}</td>
+            <td class="serial">{{ s['serial'] }}</td>
+            <td>{{ s['battery_level'] }}</td>
+            <td class="green">{{ s['battery_health'] }}</td>
+            <td>{{ s['battery_temp'] }}</td>
+            <td>{{ s['storage_used'] }} / {{ s['storage_total'] }}</td>
+            <td>{{ s['ram_free'] }} / {{ s['ram_total'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">
+        No scans saved yet. Connect a phone and <a href="/dashboard">run a scan</a>.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,9 +1,110 @@
 from flask import Flask, render_template
 import subprocess
+import sqlite3
+from datetime import datetime
 
 app = Flask(__name__)
 
 ADB = r"D:\platform-tools\adb.exe"
+DB_NAME = 'phonescope.db'
+
+
+# ---------------------------------------------------------------
+# DATABASE PART (new)
+# ---------------------------------------------------------------
+
+def get_db():
+    """Open a connection to the database file."""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row   # lets us use row['column_name']
+    return conn
+
+
+def init_db():
+    """Create the two tables if they don't exist yet."""
+    conn = get_db()
+
+    # Table 1: one row per phone
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS phones (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            serial  TEXT UNIQUE NOT NULL,
+            name    TEXT,
+            brand   TEXT,
+            model   TEXT,
+            android TEXT
+        )
+    ''')
+
+    # Table 2: one row every time a phone is scanned
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS scans (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            phone_id       INTEGER NOT NULL,
+            scanned_at     TEXT NOT NULL,
+            battery_level  TEXT,
+            battery_health TEXT,
+            battery_temp   TEXT,
+            storage_used   TEXT,
+            storage_total  TEXT,
+            ram_total      TEXT,
+            ram_free       TEXT,
+            FOREIGN KEY (phone_id) REFERENCES phones (id)
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+
+def save_scan(data):
+    """Save this scan into the database. Returns True if saved."""
+    serial = data['serial']
+
+    # No phone connected? Then there is nothing worth saving.
+    if serial in ('', 'N/A', 'unknown'):
+        return False
+
+    conn = get_db()
+
+    # Add the phone only if we haven't seen its serial number before
+    conn.execute(
+        'INSERT OR IGNORE INTO phones (serial, name, brand, model, android) '
+        'VALUES (?, ?, ?, ?, ?)',
+        (serial, data['name'], data['brand'], data['model'], data['android'])
+    )
+
+    # Find this phone's id
+    phone = conn.execute(
+        'SELECT id FROM phones WHERE serial = ?', (serial,)
+    ).fetchone()
+
+    # Save the scan result and link it to the phone
+    conn.execute(
+        'INSERT INTO scans (phone_id, scanned_at, battery_level, battery_health, '
+        'battery_temp, storage_used, storage_total, ram_total, ram_free) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (
+            phone['id'],
+            datetime.now().strftime('%Y-%m-%d %H:%M'),
+            data['battery_level'], data['battery_health'], data['battery_temp'],
+            data['storage_used'], data['storage_total'],
+            data['ram_total'], data['ram_free'],
+        )
+    )
+
+    conn.commit()
+    conn.close()
+    return True
+
+
+# Make sure the tables exist when the app starts
+init_db()
+
+
+# ---------------------------------------------------------------
+# YOUR EXISTING CODE (unchanged)
+# ---------------------------------------------------------------
 
 def adb(command):
     try:
@@ -161,7 +262,28 @@ def dashboard():
 
         'health_score': '85',
     }
+
+    save_scan(data)   # <-- NEW: save this scan into the database
+
     return render_template('dashboard.html', data=data)
+
+
+# ---------------------------------------------------------------
+# NEW PAGE: scan history
+# ---------------------------------------------------------------
+
+@app.route('/history')
+def history():
+    conn = get_db()
+    scans = conn.execute('''
+        SELECT scans.*, phones.name, phones.model, phones.serial
+        FROM scans
+        JOIN phones ON scans.phone_id = phones.id
+        ORDER BY scans.id DESC
+    ''').fetchall()
+    conn.close()
+    return render_template('history.html', scans=scans)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
