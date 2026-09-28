@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhoneScope — Know Your Android Inside Out</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0A0D14;
+      color: #E8ECF4;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 2rem; height: 60px;
+      background: rgba(10,13,20,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1E2640;
+    }
+    .logo { font-size: 1.3rem; font-weight: 700; }
+    .logo span { color: #3B82F6; }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a { color: #6B7A99; text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: #E8ECF4; }
+    .nav-btn {
+      background: #3B82F6; color: white;
+      border: none; border-radius: 8px;
+      padding: 0.45rem 1.1rem;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      display: inline-block;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(59,130,246,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.3);
+      color: #3B82F6; padding: 0.3rem 1rem;
+      border-radius: 100px; font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 700; line-height: 1.15;
+      max-width: 700px; margin-bottom: 1.2rem;
+    }
+    .hero h1 em { font-style: normal; color: #3B82F6; }
+    .hero p {
+      color: #6B7A99; font-size: 1.1rem;
+      max-width: 500px; margin: 0 auto 2.4rem;
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      background: #3B82F6; color: white;
+      padding: 0.85rem 2rem; border-radius: 10px;
+      text-decoration: none; font-size: 0.95rem;
+      font-weight: 600; display: inline-block;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-primary:hover { background: #2563EB; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent; color: #E8ECF4;
+      border: 1px solid #1E2640; padding: 0.85rem 2rem;
+      border-radius: 10px; text-decoration: none;
+      font-size: 0.95rem; font-weight: 600;
+      display: inline-block; transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-secondary:hover { border-color: #3B82F6; color: #3B82F6; }
+
+    /* PHONE MOCKUP */
+    .phone-wrap {
+      margin-top: 4rem; position: relative; display: inline-block;
+    }
+    .phone {
+      width: 220px; background: #161B2E;
+      border: 2px solid #1E2640; border-radius: 30px;
+      padding: 1.2rem 1rem; position: relative;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+    .phone-notch {
+      width: 70px; height: 18px; background: #0A0D14;
+      border-radius: 0 0 12px 12px; margin: 0 auto 1rem;
+    }
+    .scan-line {
+      position: absolute; left: 1rem; right: 1rem;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #3B82F6, transparent);
+      animation: scan 2.5s ease-in-out infinite; top: 20%;
+    }
+    @keyframes scan {
+      0%   { top: 20%; opacity: 0; }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { top: 85%; opacity: 0; }
+    }
+    .phone-screen { display: flex; flex-direction: column; gap: 0.5rem; }
+    .phone-row {
+      background: #111520; border: 1px solid #1E2640;
+      border-radius: 8px; padding: 0.5rem 0.7rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .phone-label { font-size: 0.65rem; color: #6B7A99; }
+    .phone-val { font-size: 0.7rem; font-weight: 600; }
+    .phone-val.green { color: #22C55E; }
+
+    /* STATS */
+    .stats {
+      display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap;
+      padding: 3rem 2rem;
+      border-top: 1px solid #1E2640;
+      border-bottom: 1px solid #1E2640;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 700; color: #3B82F6; }
+    .stat-label { color: #6B7A99; font-size: 0.85rem; margin-top: 0.3rem; }
+
+    /* FEATURES */
+    .section {
+      max-width: 1100px; margin: 0 auto; padding: 5rem 2rem;
+    }
+    .section-tag {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
+      color: #3B82F6; text-transform: uppercase; margin-bottom: 0.8rem;
+    }
+    .section h2 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 700; margin-bottom: 0.8rem;
+    }
+    .section > p {
+      color: #6B7A99; font-size: 1rem;
+      line-height: 1.7; max-width: 480px; margin-bottom: 3rem;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.6rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: #3B82F6; transform: translateY(-3px); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.8rem; }
+    .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .card p { color: #6B7A99; font-size: 0.875rem; line-height: 1.6; }
+
+    /* HOW IT WORKS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2rem; margin-top: 2rem;
+    }
+    .step-num {
+      width: 36px; height: 36px;
+      border: 2px solid #3B82F6; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #3B82F6; font-weight: 700; margin-bottom: 0.8rem;
+    }
+    .step h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .step p { color: #6B7A99; font-size: 0.875rem; line-height: 1.6; }
+
+    /* CTA */
+    .cta {
+      text-align: center; padding: 5rem 2rem;
+      border-top: 1px solid #1E2640;
+      background: linear-gradient(180deg, transparent, rgba(59,130,246,0.05));
+    }
+    .cta h2 { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 700; margin-bottom: 1rem; }
+    .cta p { color: #6B7A99; margin-bottom: 2rem; }
+
+    /* FOOTER */
+    footer {
+      text-align: center; padding: 2rem;
+      color: #6B7A99; font-size: 0.8rem;
+      border-top: 1px solid #1E2640;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .phone-wrap { transform: scale(0.9); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">📡 Phone<span>Scope</span></div>
+    <div class="nav-links">
+      <a href="#">Home</a>
+      <a href="#features">Features</a>
+      <a href="#how">How it Works</a>
+    </div>
+    <a href="/dashboard" class="nav-btn">View Dashboard →</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="badge">🇵🇰 Built for Pakistan's Mobile Market</div>
+    <h1>Diagnose Any Android Phone<br><em>In Seconds</em></h1>
+    <p>PhoneScope reads your phone's battery health, storage, RAM and hardware — so you always know what you're buying or selling.</p>
+    <div class="hero-actions">
+      <a href="/dashboard" class="btn-primary">See Live Dashboard →</a>
+      <a href="#features" class="btn-secondary">Learn More</a>
+    </div>
+
+    <!-- Phone Mockup -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="scan-line"></div>
+        <div class="phone-screen">
+          <div class="phone-row">
+            <span class="phone-label">Device</span>
+            <span class="phone-val">Android Phone</span>
+          </div>
+          <div class="phone-row">
+            <span class="phone-label">Battery</span>
+            <span class="phone-val green">Good ✓</span>
+          </div>
+          <div class="phone-row">
+            <span class="phone-label">Storage</span>
+            <span class="phone-val">Reading...</span>
+          </div>
+          <div class="phone-row">
+            <span class="phone-label">RAM</span>
+            <span class="phone-val">Reading...</span>
+          </div>
+          <div class="phone-row">
+            <span class="phone-label">Android</span>
+            <span class="phone-val">Detecting...</span>
+          </div>
+          <div class="phone-row">
+            <span class="phone-label">Health Score</span>
+            <span class="phone-val green">Scanning...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="stat-num">20+</div><div class="stat-label">Hardware Checks</div></div>
+    <div class="stat"><div class="stat-num">3s</div><div class="stat-label">Scan Time</div></div>
+    <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Free to Use</div></div>
+    <div class="stat"><div class="stat-num">Android</div><div class="stat-label">Full Support</div></div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-tag">Features</div>
+    <h2>Everything About Your Phone. Instantly.</h2>
+    <p>No guesswork. No hidden damage. PhoneScope surfaces what matters before you buy or sell.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔋</div>
+        <h3>Battery Health</h3>
+        <p>See real battery capacity, charge cycles and whether the battery has been replaced — the #1 thing sellers hide.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">💾</div>
+        <h3>Storage Analysis</h3>
+        <p>Check actual storage vs advertised and detect fake storage chips common in grey-market phones.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <h3>Hardware Scan</h3>
+        <p>Full scan of RAM, CPU, screen, camera and sensors — see if anything is broken or replaced.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔐</div>
+        <h3>Bootloader & IMEI</h3>
+        <p>Check if the phone is unlocked, rooted, or has a modified IMEI — critical for resale value.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Health Score</h3>
+        <p>Get a single score out of 100 summarising the phone's overall condition — perfect for quick decisions.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📄</div>
+        <h3>Export Report</h3>
+        <p>Generate a shareable PDF report of the full diagnosis — useful for sellers to build buyer trust.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how" style="padding-top:0">
+    <div class="section-tag">How It Works</div>
+    <h2>Three Steps to Full Diagnosis</h2>
+    <p>No technical knowledge required. Just plug in and scan.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Install PhoneScope</h3>
+        <p>Download the small desktop agent. It installs in under a minute and bundles everything needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Connect Your Phone</h3>
+        <p>Plug your Android phone via USB and enable USB Debugging. PhoneScope walks you through it.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Read the Report</h3>
+        <p>Your full phone report appears in seconds — battery, storage, hardware and an overall health score.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2>Ready to See What's Inside?</h2>
+    <p>Connect your Android phone and get a full report instantly.</p>
+    <a href="/dashboard" class="btn-primary">Open Live Dashboard →</a>
+  </section>
+
+  <footer>© 2026 PhoneScope · Built for Pakistan's Android Market</footer>
+
+</body>
+</html>

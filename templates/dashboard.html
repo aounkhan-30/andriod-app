@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhoneScope Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0A0D14; color: #E8ECF4; font-family: 'Segoe UI', sans-serif; }
+
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 2rem; border-bottom: 1px solid #1E2640;
+      background: rgba(10,13,20,0.9);
+    }
+    .logo { font-size: 1.3rem; font-weight: 700; }
+    .logo span { color: #3B82F6; }
+    .back-btn {
+      background: #161B2E; color: #E8ECF4;
+      border: 1px solid #1E2640; padding: 0.5rem 1rem;
+      border-radius: 8px; cursor: pointer;
+      text-decoration: none; font-size: 0.85rem;
+    }
+
+    .page-header { padding: 2rem 2rem 1rem; max-width: 1200px; margin: 0 auto; }
+    .page-header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .page-header p { color: #6B7A99; font-size: 0.9rem; }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0 2rem 1.5rem; max-width: 1200px; margin: 0 auto;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22C55E; box-shadow: 0 0 8px #22C55E;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .status-text { color: #22C55E; font-size: 0.82rem; font-weight: 500; }
+
+    .main {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      gap: 1.2rem;
+      padding: 0 2rem 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* LEFT PANEL */
+    .left-panel { display: flex; flex-direction: column; gap: 1rem; }
+    .phone-card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    }
+    .phone-visual {
+      width: 90px; background: #111520;
+      border: 2px solid #1E2640; border-radius: 16px; padding: 0.6rem;
+    }
+    .phone-notch {
+      width: 35px; height: 8px; background: #0A0D14;
+      border-radius: 0 0 6px 6px; margin: 0 auto 0.5rem;
+    }
+    .phone-screen {
+      height: 100px;
+      background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(6,182,212,0.1));
+      border-radius: 6px; display: flex;
+      align-items: center; justify-content: center; font-size: 1.5rem;
+    }
+    .phone-name { font-weight: 700; font-size: 1rem; text-align: center; }
+    .phone-model { color: #6B7A99; font-size: 0.78rem; text-align: center; }
+
+    .info-box {
+      width: 100%; background: #111520;
+      border: 1px solid #1E2640; border-radius: 8px; padding: 0.6rem 0.8rem;
+    }
+    .info-box-label { color: #6B7A99; font-size: 0.68rem; margin-bottom: 0.2rem; }
+    .info-box-val { font-size: 0.8rem; font-weight: 600; font-family: monospace; color: #3B82F6; }
+    .info-box-val.green { color: #22C55E; }
+    .info-box-val.yellow { color: #F59E0B; }
+
+    .score-card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .score-circle {
+      width: 70px; height: 70px; border-radius: 50%; flex-shrink: 0;
+      background: conic-gradient(#22C55E 0% 85%, #1E2640 85% 100%);
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .score-circle::after {
+      content: ''; position: absolute;
+      width: 52px; height: 52px; background: #161B2E; border-radius: 50%;
+    }
+    .score-num { position: relative; z-index: 1; font-size: 1rem; font-weight: 700; color: #22C55E; }
+    .score-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .score-desc { color: #6B7A99; font-size: 0.75rem; line-height: 1.5; }
+
+    /* RIGHT PANEL */
+    .right-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .metric-card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.2rem;
+    }
+    .metric-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.8rem;
+    }
+    .metric-icon { font-size: 1.2rem; }
+    .badge-good { background: rgba(34,197,94,0.12); color: #22C55E; font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 100px; }
+    .badge-warn { background: rgba(245,158,11,0.12); color: #F59E0B; font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 100px; }
+    .metric-val { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .metric-val.green { color: #22C55E; }
+    .metric-label { color: #6B7A99; font-size: 0.75rem; margin-bottom: 0.6rem; }
+    .bar { height: 6px; background: #1E2640; border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+    .bar-green { background: linear-gradient(90deg, #22C55E, #4ADE80); }
+    .bar-blue  { background: linear-gradient(90deg, #3B82F6, #06B6D4); }
+    .metric-sub { color: #6B7A99; font-size: 0.7rem; margin-top: 0.5rem; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .info-card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.2rem;
+    }
+    .info-card h4 {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #6B7A99; margin-bottom: 0.8rem;
+    }
+    .info-row {
+      display: flex; justify-content: space-between;
+      padding: 0.4rem 0; border-bottom: 1px solid #1E2640; font-size: 0.8rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key { color: #6B7A99; }
+    .info-val { font-weight: 500; }
+    .info-val.green { color: #22C55E; }
+
+    @media (max-width: 768px) {
+      .main { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">📡 Phone<span>Scope</span></div>
+    <a href="/" class="back-btn">← Back to Home</a>
+  </nav>
+
+  <div class="page-header">
+    <h1>Device Report</h1>
+    <p>Full diagnostic scan — {{ data.name }}</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span class="status-text">Phone connected — Scan complete</span>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+      <div class="phone-card">
+        <div class="phone-visual">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">📱</div>
+        </div>
+        <div>
+          <div class="phone-name">{{ data.name }}</div>
+          <div class="phone-model">Android {{ data.android }} · {{ data.ram_total }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Brand</div>
+          <div class="info-box-val">{{ data.brand }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Model</div>
+          <div class="info-box-val">{{ data.model }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Serial Number</div>
+          <div class="info-box-val">{{ data.serial }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Bootloader</div>
+          <div class="info-box-val green">{{ data.bootloader }} ✓</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Processor</div>
+          <div class="info-box-val">{{ data.cpu }}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">Security Patch</div>
+          <div class="info-box-val yellow">{{ data.security_patch }}</div>
+        </div>
+      </div>
+
+      <!-- Score -->
+      <div class="score-card">
+        <div class="score-circle">
+          <span class="score-num">{{ data.health_score }}</span>
+        </div>
+        <div>
+          <div class="score-title">Good Condition</div>
+          <div class="score-desc">Safe to buy or sell. Minor battery aging only.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- Metrics -->
+      <div class="metrics-grid">
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">🔋</span>
+            <span class="badge-good">{{ data.battery_health }}</span>
+          </div>
+          <div class="metric-val green">{{ data.battery_level }}</div>
+          <div class="metric-label">Battery Level · {{ data.battery_temp }}</div>
+          <div class="bar"><div class="bar-fill bar-green" style="width:{{ data.battery_level }}"></div></div>
+          <div class="metric-sub">Status: {{ data.battery_status }}</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">💾</span>
+            <span class="badge-good">Normal</span>
+          </div>
+          <div class="metric-val">{{ data.storage_used }}</div>
+          <div class="metric-label">Storage Used / {{ data.storage_total }}</div>
+          <div class="bar"><div class="bar-fill bar-blue" style="width:{{ data.storage_pct }}%"></div></div>
+          <div class="metric-sub">Total: {{ data.storage_total }}</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">🧠</span>
+            <span class="badge-good">Normal</span>
+          </div>
+          <div class="metric-val">{{ data.ram_free }}</div>
+          <div class="metric-label">RAM Free / {{ data.ram_total }} Total</div>
+          <div class="bar"><div class="bar-fill bar-blue" style="width:50%"></div></div>
+          <div class="metric-sub">CPU: {{ data.cpu }}</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">🤖</span>
+            <span class="badge-good">Updated</span>
+          </div>
+          <div class="metric-val">{{ data.android }}</div>
+          <div class="metric-label">Android Version</div>
+          <div class="bar"><div class="bar-fill bar-green" style="width:95%"></div></div>
+          <div class="metric-sub">Build: {{ data.build }}</div>
+        </div>
+
+      </div>
+
+      <!-- Info Cards -->
+      <div class="info-grid">
+
+        <div class="info-card">
+          <h4>📱 Device Info</h4>
+          <div class="info-row">
+            <span class="info-key">Brand</span>
+            <span class="info-val">{{ data.brand }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Model</span>
+            <span class="info-val">{{ data.model }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Android</span>
+            <span class="info-val">{{ data.android }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Security Patch</span>
+            <span class="info-val">{{ data.security_patch }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Build</span>
+            <span class="info-val">{{ data.build }}</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h4>🔋 Battery Details</h4>
+          <div class="info-row">
+            <span class="info-key">Level</span>
+            <span class="info-val green">{{ data.battery_level }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Health</span>
+            <span class="info-val green">{{ data.battery_health }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Temperature</span>
+            <span class="info-val">{{ data.battery_temp }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Status</span>
+            <span class="info-val">{{ data.battery_status }}</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h4>💾 Storage & RAM</h4>
+          <div class="info-row">
+            <span class="info-key">Storage Used</span>
+            <span class="info-val">{{ data.storage_used }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Storage Total</span>
+            <span class="info-val">{{ data.storage_total }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">RAM Free</span>
+            <span class="info-val">{{ data.ram_free }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">RAM Total</span>
+            <span class="info-val">{{ data.ram_total }}</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h4>🔩 System</h4>
+          <div class="info-row">
+            <span class="info-key">CPU</span>
+            <span class="info-val">{{ data.cpu }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Bootloader</span>
+            <span class="info-val green">{{ data.bootloader }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Network</span>
+            <span class="info-val">{{ data.network }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Serial</span>
+            <span class="info-val">{{ data.serial }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
