@@ -15,6 +15,7 @@
     }
     .logo { font-size: 1.3rem; font-weight: 700; }
     .logo span { color: #3B82F6; }
+    .nav-right { display: flex; gap: 0.6rem; }
     .back-btn {
       background: #161B2E; color: #E8ECF4;
       border: 1px solid #1E2640; padding: 0.5rem 1rem;
@@ -140,10 +141,52 @@
     .info-val { font-weight: 500; }
     .info-val.green { color: #22C55E; }
 
+    /* PTA CHECK CARD (new) */
+    .pta-card {
+      background: #161B2E; border: 1px solid #1E2640;
+      border-radius: 14px; padding: 1.2rem;
+    }
+    .pta-card h4 {
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #6B7A99; margin-bottom: 0.8rem;
+    }
+    .pta-help { color: #6B7A99; font-size: 0.8rem; line-height: 1.6; margin-bottom: 0.9rem; }
+    .pta-links {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+      margin-bottom: 1.1rem; font-size: 0.8rem; color: #6B7A99;
+    }
+    .pta-link {
+      background: #111520; color: #3B82F6; border: 1px solid #1E2640;
+      padding: 0.45rem 0.9rem; border-radius: 8px;
+      text-decoration: none; font-weight: 600; font-size: 0.8rem;
+    }
+    .pta-link:hover { border-color: #3B82F6; }
+    .pta-links b { color: #E8ECF4; }
+    .pta-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.8rem; align-items: start; }
+    .pta-field label { display: block; color: #6B7A99; font-size: 0.7rem; margin-bottom: 0.3rem; }
+    .pta-field input, .pta-field select {
+      width: 100%; background: #111520; color: #E8ECF4;
+      border: 1px solid #1E2640; border-radius: 8px;
+      padding: 0.55rem 0.7rem; font-size: 0.85rem; font-family: monospace;
+    }
+    .pta-field select { font-family: 'Segoe UI', sans-serif; }
+    .pta-field input:focus, .pta-field select:focus { outline: none; border-color: #3B82F6; }
+    .imei-msg { font-size: 0.7rem; margin-top: 0.3rem; min-height: 1rem; }
+    .imei-msg.ok  { color: #22C55E; }
+    .imei-msg.bad { color: #EF4444; }
+    .pta-btn {
+      margin-top: 1.15rem; background: #3B82F6; color: white;
+      border: none; border-radius: 8px; padding: 0.6rem 1.1rem;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    }
+    .pta-btn:disabled { background: #1E2640; color: #6B7A99; cursor: not-allowed; }
+
     @media (max-width: 768px) {
       .main { grid-template-columns: 1fr; }
       .metrics-grid { grid-template-columns: 1fr 1fr; }
       .info-grid { grid-template-columns: 1fr; }
+      .pta-form { grid-template-columns: 1fr; }
+      .pta-btn { margin-top: 0; }
     }
   </style>
 </head>
@@ -151,8 +194,10 @@
 
   <nav>
     <div class="logo">📡 Phone<span>Scope</span></div>
-    <a href="/history" class="back-btn">History</a>
-    <a href="/" class="back-btn">← Back to Home</a>
+    <div class="nav-right">
+      <a href="/history" class="back-btn">History</a>
+      <a href="/" class="back-btn">← Back to Home</a>
+    </div>
   </nav>
 
   <div class="page-header">
@@ -356,8 +401,104 @@
         </div>
 
       </div>
+
+      <!-- PTA CHECK (new) -->
+      <div class="pta-card">
+        <h4>🛡️ PTA Status Check</h4>
+
+        {% if scan_id %}
+        <p class="pta-help">
+          Dial <b>*#06#</b> on the phone to see its IMEI. Check it with PTA,
+          then type the IMEI and the result below to save them with this scan.
+        </p>
+
+        <div class="pta-links">
+          <a href="https://dirbs.pta.gov.pk/" target="_blank" rel="noopener" class="pta-link">Open PTA DVS website ↗</a>
+          <span>or SMS the IMEI to <b>8484</b></span>
+        </div>
+
+        <form method="POST" action="/pta/{{ scan_id }}" class="pta-form">
+          <div class="pta-field">
+            <label for="imei">IMEI number</label>
+            <input id="imei" name="imei" type="text" inputmode="numeric"
+                   maxlength="15" placeholder="15 digits" autocomplete="off" required>
+            <div id="imei-msg" class="imei-msg"></div>
+          </div>
+
+          <div class="pta-field">
+            <label for="status">Result from PTA</label>
+            <select id="status" name="status" required>
+              <option value="">Choose result</option>
+              <option value="Compliant">Compliant</option>
+              <option value="Non-compliant">Non-compliant</option>
+              <option value="Blocked">Blocked</option>
+            </select>
+          </div>
+
+          <button type="submit" id="pta-save" class="pta-btn" disabled>Save PTA result</button>
+        </form>
+        {% else %}
+        <p class="pta-help">
+          No phone was detected, so this scan was not saved. Connect a phone
+          with USB debugging on and reload this page to use the PTA check.
+        </p>
+        {% endif %}
+      </div>
+
     </div>
   </div>
+
+  {% if scan_id %}
+  <script>
+    // Same maths check as the Python code: 15 digits + Luhn check
+    function isValidImei(imei) {
+      if (!/^\d{15}$/.test(imei)) return false;
+      var total = 0;
+      var digits = imei.split('').reverse();
+      for (var i = 0; i < digits.length; i++) {
+        var d = parseInt(digits[i], 10);
+        if (i % 2 === 1) {
+          d = d * 2;
+          if (d > 9) d = d - 9;
+        }
+        total += d;
+      }
+      return total % 10 === 0;
+    }
+
+    var imeiInput = document.getElementById('imei');
+    var statusSelect = document.getElementById('status');
+    var saveBtn = document.getElementById('pta-save');
+    var msg = document.getElementById('imei-msg');
+
+    function refresh() {
+      var imei = imeiInput.value.trim();
+      var valid = isValidImei(imei);
+
+      if (imei.length === 0) {
+        msg.textContent = '';
+        msg.className = 'imei-msg';
+      } else if (imei.length < 15) {
+        msg.textContent = imei.length + ' / 15 digits';
+        msg.className = 'imei-msg';
+      } else if (valid) {
+        msg.textContent = 'Valid IMEI ✓';
+        msg.className = 'imei-msg ok';
+      } else {
+        msg.textContent = 'Not a valid IMEI - check the digits';
+        msg.className = 'imei-msg bad';
+      }
+
+      saveBtn.disabled = !(valid && statusSelect.value !== '');
+    }
+
+    imeiInput.addEventListener('input', function () {
+      imeiInput.value = imeiInput.value.replace(/\D/g, '');   // digits only
+      refresh();
+    });
+    statusSelect.addEventListener('change', refresh);
+  </script>
+  {% endif %}
 
 </body>
 </html>
